@@ -15,8 +15,6 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     api_prefix: str = "/api"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
-    data_dir: Path = PROJECT_ROOT / "data"
-    database_url: str | None = None
     scheduler_enabled: bool = True
 
     model_config = SettingsConfigDict(
@@ -28,9 +26,13 @@ class Settings(BaseSettings):
 
     @property
     def resolved_database_url(self) -> str:
-        if self.database_url:
-            return self.database_url
-        return f"sqlite+aiosqlite:///{(self.data_dir / 'vacancies_search.db').as_posix()}"
+        database_path = self.data_dir / "vacancies_search.db"
+        return f"sqlite+aiosqlite:///{database_path.as_posix()}"
+
+    @property
+    def data_dir(self) -> Path:
+        """Fixed local directory for all private application data."""
+        return PROJECT_ROOT / "data"
 
 
 @lru_cache
