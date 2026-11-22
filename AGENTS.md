@@ -57,40 +57,43 @@ vacancies-search/
     │   ├── types/            # TypeScript interfaces (strictly synced with models.py)
     │   └── App.tsx
     └── package.json
+```
+---
 
 ## 4. Architectural Rules & Implementation Requirements
-4.1. Security & Public Repository Hygiene
-NEVER hardcode API keys, tokens, personal file paths, or sample personal resumes in the codebase.
-All user-specific data (resumes, stop words, LLM API keys, scraped vacancies) must be stored exclusively in the local SQLite database (data/vacancies_search.db).
-Browser session cookies and storage must reside exclusively in data/browser_profile/.
-The data/ directory, .env, *.db, and *.sqlite* files must be ignored in .gitignore. On startup, the backend must automatically create the data/ directory if it does not exist.
-4.2. Browser Automation (Playwright)
-Use async_playwright with chromium.launch_persistent_context(user_data_dir="data/browser_profile", ...).
-Manual Login Mode (POST /api/browser/open-login): Launches Chromium with headless=False pointing to a startup URL (or a user-provided URL) so the user can manually log into job boards. Once the user closes the window, cookies and session state persist locally.
-Concurrency Control: Protect browser launch operations with a shared asyncio.Lock() so that background scraping tasks and manual login sessions never attempt to access data/browser_profile simultaneously (which causes Chromium profile lock crashes).
-Human-like Pacing: Add randomized delays (await asyncio.sleep(random.uniform(1.5, 4.0))) between page navigations during scraping.
-4.3. Universal Scraping & LLM Scoring Pipeline
-Link Extraction from Search Pages: Because users can add arbitrary job board URLs, strip <script>, <style>, and <svg> tags from the rendered DOM, convert the main content into compact text/Markdown preserving href attributes, and use an LLM call to extract an array of individual vacancy URLs.
-Deduplication: Before navigating to an individual vacancy URL, check the Vacancy table by url to skip already processed listings.
-Vacancy Scoring: Pass the cleaned full vacancy text along with UserProfile data (resume, preferences, stop words) to the LLM using Structured Outputs / JSON Schema to enforce the following output:
-match_score (int, 0–100)
-pros (list[str] — reasons why the vacancy fits the candidate)
-cons (list[str] — missing requirements or red flags)
-is_stop_word_triggered (bool)
-summary (str — concise 2-sentence overview of the role)
-4.4. Database Models (backend/app/models.py)
-UserProfile: id, resume_text, preferences, stop_words, min_match_score (default: 70), updated_at.
-JobSource: id, name, url, is_active (bool), check_interval_hours (int, default: 4), last_run_at, last_status, last_error.
-Vacancy: id, source_id, url (unique index), title, company, salary, raw_text, match_score, ai_summary, pros_json, cons_json, status (new | favorite | applied | rejected), created_at.
-AppSettings: id, llm_api_key, llm_base_url (default: "https://api.openai.com/v1"), llm_model (default: "gpt-4o-mini").
+### 4.1. Security & Public Repository Hygiene
+- NEVER hardcode API keys, tokens, personal file paths, or sample personal resumes in the codebase.
+- All user-specific data (resumes, stop words, LLM API keys, scraped vacancies) must be stored exclusively in the local SQLite database (data/vacancies_search.db).
+- Browser session cookies and storage must reside exclusively in data/browser_profile/.
+- The data/ directory, .env, *.db, and *.sqlite* files must be ignored in .gitignore. On startup, the backend must automatically create the data/ directory if it does not exist.
+### 4.2. Browser Automation (Playwright)
+- Use async_playwright with chromium.launch_persistent_context(user_data_dir="data/browser_profile", ...).
+- Manual Login Mode (POST /api/browser/open-login): Launches Chromium with headless=False pointing to a startup URL (or a user-provided URL) so the user can manually log into job boards. Once the user closes the window, cookies and session state persist locally.
+- Concurrency Control: Protect browser launch operations with a shared asyncio.Lock() so that background scraping tasks and manual login sessions never attempt to access data/browser_profile simultaneously (which causes Chromium profile lock crashes).
+- Human-like Pacing: Add randomized delays (await asyncio.sleep(random.uniform(1.5, 4.0))) between page navigations during scraping.
+### 4.3. Universal Scraping & LLM Scoring Pipeline
+- Link Extraction from Search Pages: Because users can add arbitrary job board URLs, strip <script>, <style>, and <svg> tags from the rendered DOM, convert the main content into compact text/Markdown preserving href attributes, and use an LLM call to extract an array of individual vacancy URLs.
+- Deduplication: Before navigating to an individual vacancy URL, check the Vacancy table by url to skip already processed listings.
+- Vacancy Scoring: Pass the cleaned full vacancy text along with UserProfile data (resume, preferences, stop words) to the LLM using Structured Outputs / JSON Schema to enforce the following output:
+    - match_score (int, 0–100)
+    - pros (list[str] — reasons why the vacancy fits the candidate)
+    - cons (list[str] — missing requirements or red flags)
+    - is_stop_word_triggered (bool)
+    - summary (str — concise 2-sentence overview of the role)
+### 4.4. Database Models (backend/app/models.py)
+- UserProfile: id, resume_text, preferences, stop_words, min_match_score (default: 70), updated_at.
+- JobSource: id, name, url, is_active (bool), check_interval_hours (int, default: 4), last_run_at, last_status, last_error.
+- Vacancy: id, source_id, url (unique index), title, company, salary, raw_text, match_score, ai_summary, pros_json, cons_json, status (new | favorite | applied | rejected), created_at.
+- AppSettings: id, llm_api_key, llm_base_url (default: "https://api.openai.com/v1"), llm_model (default: "gpt-4o-mini").
+
 ## 5. Codex Workflow & Quality Standards
-Code Style:
-Python: Use strict type hints, follow PEP 8, and use async/await for all I/O operations (database, HTTP requests, Playwright).
-TypeScript: Enable strict mode ("strict": true), avoid any.
-Sandbox Testing:
-The Codex execution environment does not have a graphical display server (X11/Wayland) or live internet access to job boards.
-All unit and integration tests for scraper, browser, and llm modules must mock external dependencies (unittest.mock.AsyncMock).
-Before finishing any task, always run pytest inside /backend and npm run build inside /frontend to verify there are no broken tests, type errors, or build failures.
-API Synchronization:
-Whenever backend endpoints or Pydantic schemas change, update the corresponding TypeScript interfaces in frontend/src/types/ and API client functions in frontend/src/api/.
-All backend routes must be prefixed with /api/....
+### 5.1 Code Style:
+- Python: Use strict type hints, follow PEP 8, and use async/await for all I/O operations (database, HTTP requests, Playwright).
+- TypeScript: Enable strict mode ("strict": true), avoid any.
+### 5.2 Sandbox Testing:
+- The Codex execution environment does not have a graphical display server (X11/Wayland) or live internet access to job boards.
+- All unit and integration tests for scraper, browser, and llm modules must mock external dependencies (unittest.mock.AsyncMock).
+- Before finishing any task, always run pytest inside /backend and npm run build inside /frontend to verify there are no broken tests, type errors, or build failures.
+### 5.3  API Synchronization:
+- Whenever backend endpoints or Pydantic schemas change, update the corresponding TypeScript interfaces in frontend/src/types/ and API client functions in frontend/src/api/.
+- All backend routes must be prefixed with /api/....
