@@ -1,12 +1,37 @@
-data/
-*.db
-*.sqlite*
+# Local application data and browser sessions
+/data/
+/backend/data/
+**/browser_profile/
+
+# Secrets and local environment configuration
 .env
 .env.*
 !.env.example
-node_modules/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Python environments and generated files
+.venv/
 venv/
+env/
 __pycache__/
 *.py[cod]
+*.egg-info/
+build/
+dist/
 .pytest_cache/
-.venv/
+.mypy_cache/
+.ruff_cache/
+
+# JavaScript dependencies and build output
+node_modules/
+/frontend/dist/
+/frontend/.vite/
+/frontend/tsconfig*.tsbuildinfo
+
+# Operating system files
+.DS_Store
+Thumbs.db
