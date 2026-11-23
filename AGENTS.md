@@ -32,6 +32,8 @@ Strictly adhere to the following stack. Do not introduce heavy message brokers (
 ```text
 vacancies-search/
 ├── AGENTS.md                 # Architectural rules and instructions for Codex
+├── skills/                   # Project-specific Codex skills (one directory per skill)
+├── rules/                    # Reusable Codex rules for this project
 ├── README.md                 # Documentation and local setup instructions
 ├── .gitignore                # Exclusions protecting personal data, cookies, and keys
 ├── .env.example              # Environment variables template
@@ -87,6 +89,10 @@ vacancies-search/
 - AppSettings: id, llm_api_key, llm_base_url (default: "https://api.openai.com/v1"), llm_model (default: "gpt-4o-mini").
 
 ## 5. Codex Workflow & Quality Standards
+### 5.0 Project Rules and Skills
+- Before making changes, read and apply the reusable guidance in `rules/` alongside this file. If guidance conflicts, the more specific repository instruction in this `AGENTS.md` takes precedence.
+- Check the skill descriptions in `skills/*/SKILL.md` when a task matches a skill's stated use case, and follow that skill for the task. User-invoked skills must be used.
+
 ### 5.1 Code Style:
 - Python: Use strict type hints, follow PEP 8, and use async/await for all I/O operations (database, HTTP requests, Playwright).
 - TypeScript: Enable strict mode ("strict": true), avoid any.
